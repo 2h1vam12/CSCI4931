@@ -1,6 +1,14 @@
+# Deep Learning Homework 1
+# Author: Shivam Pathak
+# Date: 09/08/2025
+# Description: This script implements a simple neural network with one hidden layer to solve a small dataset problem.
+
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import sys
 
 # The Given Small Dataset
 X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
@@ -58,7 +66,12 @@ def forward_propagation(X, W1, b1, W2, b2):
     A2 = np.zeros((n,output_size))
 
     #@TODO: Your code begins here...
-    
+    # Hidden Layer 
+    Z1 = np.dot(X, W1) + b1 # shaping (n, hidden_size)
+    A1 = sigmoid(Z1) # activation
+    #Output Layer
+    Z2 = np.dot(A1, W2) + b2 # shaping (n, output_size)
+    A2 = sigmoid(Z2) # final prediction
 
 
 
@@ -92,10 +105,16 @@ def backward(Z1, A1, Z2, A2, Y):
     
 
     #@TODO: Your code begins here...
-    
+    m = Y.shape[0] # number of samples
+    # Output layer error 
+    dZ2 = (A2 - Y) * (A2 * (1 - A2)) # derivative of loss w.r.t Z2
+    dW2 = (A1.T @ dZ2) / m  # average over all samples
+    db2 = np.sum(dZ2, axis=0, keepdims=True) / m # average over all samples
 
-
-
+    # hidden layer error
+    dZ1 = (dZ2 @ W2.T) * (A1 * (1 - A1)) # derivative of loss w.r.t Z1
+    dW1 = (X.T @ dZ1) / m # average over all samples
+    db1 = np.sum(dZ1, axis=0, keepdims=True) / m # average over all samples
 
 
     return dW1, db1, dW2, db2
@@ -123,7 +142,10 @@ def update_weights(W1, b1, W2, b2, dW1, db1, dW2, db2):
 
     '''
     #@TODO: Your code begins here...
-
+    W1 -= learning_rate * dW1 # update rules
+    b1 -= learning_rate * db1 
+    W2 -= learning_rate * dW2
+    b2 -= learning_rate * db2
     
 
 
@@ -132,10 +154,15 @@ def update_weights(W1, b1, W2, b2, dW1, db1, dW2, db2):
 # The training loop for visualization
 learning_rate = 0.1
 epochs = 10000
+losses = []
 
 for epoch in tqdm(range(epochs)):
     # Forward propagation
     Z1, A1, Z2, A2 = forward_propagation(X, W1, b1, W2, b2)
+
+    # Compute loss (Mean Squared Error)
+    loss = np.mean((Y - A2) ** 2)
+    losses.append(loss)
     
     # Backward propagation
     dW1, db1, dW2, db2 = backward(Z1, A1, Z2, A2, Y)
@@ -154,6 +181,12 @@ grid = np.c_[xx1.ravel(), xx2.ravel()]
 _, _, _, Y_pred = forward_propagation(grid, W1, b1, W2, b2)
 Y_pred = Y_pred.reshape(xx1.shape)
 
+# After training
+_, _, _, A2 = forward_propagation(X, W1, b1, W2, b2)
+print("Predictions:", np.round(A2.ravel(), 3), flush=True)
+print("Targets:", Y.ravel(), flush=True)
+sys.stdout.flush()
+
 # Plot decision boundary
 plt.figure(figsize=(8, 6))
 plt.contourf(xx1, xx2, Y_pred, levels=[0, 0.5, 1], alpha=0.6, cmap="coolwarm")
@@ -165,5 +198,15 @@ plt.colorbar(label="Prediction Confidence")
 plt.show()
 
 
+
+
+
 # @TODO: Please draw epoch-loss plot here...
+plt.figure(figsize=(8, 6))
+plt.plot(losses)
+plt.title("Loss over Epochs")
+plt.xlabel("Epochs")
+plt.ylabel("MSE Loss")
+plt.show()
+
 

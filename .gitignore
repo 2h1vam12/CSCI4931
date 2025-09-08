@@ -1,0 +1,28 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment folders
+.venv/
+venv/
+ENV/
+env/
+
+# macOS
+.DS_Store
+
+# Pip install logs
+pip-log.txt
+
+# Jupyter checkpoints (if you use notebooks)
+.ipynb_checkpoints/
+
+# Large output artifacts
+*.png
+*.jpg
+*.pdf
+
+# Logs or temporary files
+*.log
