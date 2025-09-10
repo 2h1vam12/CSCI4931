@@ -6,6 +6,8 @@
 
 
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")   
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import sys
@@ -195,9 +197,9 @@ plt.title("Decision Boundary for the Small Data Problem")
 plt.xlabel("x1")
 plt.ylabel("x2")
 plt.colorbar(label="Prediction Confidence")
-plt.show()
-
-
+plt.tight_layout()
+plt.savefig(f"plot_{hidden_size}_{learning_rate}.png", dpi=200)
+plt.close()
 
 
 
@@ -207,6 +209,92 @@ plt.plot(losses)
 plt.title("Loss over Epochs")
 plt.xlabel("Epochs")
 plt.ylabel("MSE Loss")
-plt.show()
+plt.tight_layout()
+plt.savefig(f"plot_{hidden_size}_{learning_rate}.png", dpi=200)
+plt.close()
 
 
+
+# PART 3: EXPERIMENTS 
+def train_nn(hidden_size=2, learning_rate=0.1, epochs=5000, seed=42, verbose=True):
+    # Reinitialize params for a clean run
+    rng = np.random.default_rng(seed)
+    input_size, output_size = 2, 1
+    W1 = rng.normal(0, 0.01, size=(input_size, hidden_size))
+    b1 = np.zeros((1, hidden_size))
+    W2 = rng.normal(0, 0.01, size=(hidden_size, output_size))
+    b2 = np.zeros((1, output_size))
+
+    losses = []
+    for _ in range(epochs):
+        Z1, A1, Z2, A2 = forward_propagation(X, W1, b1, W2, b2)
+        loss = np.mean((Y - A2) ** 2)
+        losses.append(loss)
+        dW1, db1, dW2, db2 = backward(Z1, A1, Z2, A2, Y)
+        # manual updates using the experiment's learning_rate
+        W1 -= learning_rate * dW1
+        b1 -= learning_rate * db1
+        W2 -= learning_rate * dW2
+        b2 -= learning_rate * db2
+
+    if verbose:
+        print(f"\n[Run] hidden={hidden_size}, lr={learning_rate}, epochs={epochs}")
+        print("Final loss:", round(losses[-1], 6))
+        _, _, _, A2 = forward_propagation(X, W1, b1, W2, b2)
+        print("Predictions:", np.round(A2.ravel(), 3))
+        print("Targets    :", Y.ravel())
+    return W1, b1, W2, b2, losses
+
+def plot_decision_boundary(W1, b1, W2, b2, title):
+    x1 = np.linspace(-0.5, 1.5, 100)
+    x2 = np.linspace(-0.5, 1.5, 100)
+    xx1, xx2 = np.meshgrid(x1, x2)
+    grid = np.c_[xx1.ravel(), xx2.ravel()]
+    _, _, _, Yg = forward_propagation(grid, W1, b1, W2, b2)
+    Yg = Yg.reshape(xx1.shape)
+
+    plt.figure(figsize=(6,5))
+    plt.contourf(xx1, xx2, Yg, levels=[0, 0.5, 1], alpha=0.6, cmap="coolwarm")
+    plt.scatter(X[:,0], X[:,1], c=Y.ravel(), edgecolors="k", cmap="coolwarm", s=100)
+    plt.title(title); plt.xlabel("x1"); plt.ylabel("x2")
+    plt.colorbar(label="Prediction Confidence")
+    plt.tight_layout()
+    plt.savefig(f"plot_{hidden_size}_{learning_rate}.png", dpi=200)
+    plt.close()
+
+
+# --- 3A. Learning-rate sweep ---
+lrs = [0.01, 0.1, 0.5]
+plt.figure(figsize=(8,6))
+for lr in lrs:
+    _, _, _, _, losses_lr = train_nn(hidden_size=2, learning_rate=lr, epochs=5000, verbose=True)
+    plt.plot(losses_lr, label=f"lr={lr}")
+plt.title("Loss vs Epochs for Different Learning Rates")
+plt.xlabel("Epoch"); plt.ylabel("MSE Loss"); plt.legend(); plt.show()
+
+# show a boundary from one LR run (pick the middle one)
+W1e, b1e, W2e, b2e, _ = train_nn(hidden_size=2, learning_rate=0.1, epochs=5000, verbose=False)
+plot_decision_boundary(W1e, b1e, W2e, b2e, "Decision Boundary (hidden=2, lr=0.1)")
+
+# --- 3B. Hidden-size sweep ---
+hs = [1, 2, 5, 10]
+plt.figure(figsize=(8,6))
+for h in hs:
+    _, _, _, _, losses_h = train_nn(hidden_size=h, learning_rate=0.1, epochs=5000, verbose=True)
+    plt.plot(losses_h, label=f"hidden={h}")
+plt.title("Loss vs Epochs for Different Hidden Sizes")
+plt.xlabel("Epoch"); plt.ylabel("MSE Loss"); plt.legend(); plt.show()
+
+# show boundaries for a couple of sizes
+for h in [1, 5]:
+    W1h, b1h, W2h, b2h, _ = train_nn(hidden_size=h, learning_rate=0.1, epochs=5000, verbose=False)
+    plot_decision_boundary(W1h, b1h, W2h, b2h, f"Decision Boundary (hidden={h}, lr=0.1)")
+
+def main():
+
+    print("\nAll experiments complete. Plots saved to current directory.")
+
+if __name__ == "__main__":
+    main()
+    import sys
+    sys.exit(0)
